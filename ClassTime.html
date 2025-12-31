@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ClassTime AI</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<style>
+:root{
+  --bg:#020617;
+  --glass:rgba(255,255,255,.08);
+  --border:rgba(255,255,255,.15);
+  --text:#e5e7eb;
+  --muted:#94a3b8;
+  --primary:#8b5cf6;
+  --accent:#22c55e;
+  --danger:#ef4444;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:system-ui,Inter;
+  color:var(--text);
+  background:
+    radial-gradient(circle at 10% 10%, var(--primary), transparent 40%),
+    radial-gradient(circle at 90% 20%, var(--accent), transparent 45%),
+    var(--bg);
+}
+
+/* HEADER */
+header{
+  padding:16px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  background:var(--glass);
+  backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+}
+button{
+  background:var(--primary);
+  border:none;
+  color:white;
+  padding:8px 14px;
+  border-radius:14px;
+  cursor:pointer;
+}
+button.ghost{
+  background:transparent;
+  border:1px solid var(--border);
+}
+button.danger{background:var(--danger)}
+
+/* GRID */
+.grid{
+  padding:16px;
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+  gap:16px;
+}
+.day{
+  background:var(--glass);
+  border:1px solid var(--border);
+  border-radius:20px;
+  padding:14px;
+}
+.class{
+  background:rgba(0,0,0,.35);
+  border-radius:14px;
+  padding:10px;
+  margin-top:8px;
+}
+
+/* FAB */
+.fab{
+  position:fixed;
+  right:22px;
+  bottom:22px;
+  width:60px;height:60px;
+  border-radius:50%;
+  background:linear-gradient(135deg,var(--primary),var(--accent));
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:28px;
+}
+
+/* MODAL */
+.modal{
+  display:none;
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.7);
+  align-items:center;
+  justify-content:center;
+}
+.modal-box{
+  width:340px;
+  background:var(--glass);
+  padding:20px;
+  border-radius:20px;
+  border:1px solid var(--border);
+}
+.modal-box input,select{
+  width:100%;
+  padding:10px;
+  margin:6px 0;
+  border-radius:12px;
+  border:none;
+}
+
+/* SETTINGS */
+.settings-page{
+  position:fixed;
+  inset:0;
+  background:var(--bg);
+  display:none;
+  overflow:auto;
+}
+.settings-content{
+  max-width:480px;
+  margin:auto;
+  padding:20px;
+}
+.setting-section{
+  background:var(--glass);
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:14px;
+  margin-bottom:14px;
+}
+.setting-row{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin:8px 0;
+}
+small{color:var(--muted)}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h3>📅 ClassTime AI</h3>
+  <button class="ghost" onclick="openSettings()">⚙️</button>
+</header>
+
+<div class="grid" id="grid"></div>
+<div class="fab" onclick="askPwd(()=>openForm())">＋</div>
+
+<!-- PASSWORD -->
+<div class="modal" id="pwdModal">
+  <div class="modal-box">
+    <h4>🔐 Enter Password</h4>
+    <input type="password" id="pwdInput">
+    <button onclick="verifyPwd()">Confirm</button>
+  </div>
+</div>
+
+<!-- ADD / EDIT -->
+<div class="modal" id="formModal">
+  <div class="modal-box">
+    <h4>Add / Edit Class</h4>
+    <input id="cName" placeholder="Class name">
+    <select id="cDay"></select>
+    <input type="time" id="cStart">
+    <input type="time" id="cEnd">
+    <button onclick="saveForm()">Save</button>
+  </div>
+</div>
+
+<!-- SETTINGS -->
+<div class="settings-page" id="settingsPage">
+<header>
+  <h3>⚙️ Settings</h3>
+  <button class="ghost" onclick="closeSettings()">✖</button>
+</header>
+
+<div class="settings-content">
+
+<div class="setting-section">
+<h4>🔔 Notifications</h4>
+
+<div class="setting-row">
+<span>Enable</span>
+<input type="checkbox" id="notify">
+</div>
+
+<div class="setting-row">
+<span>Reminder Time</span>
+<select id="notifyTime">
+<option value="5">5 min</option>
+<option value="10">10 min</option>
+<option value="15">15 min</option>
+</select>
+</div>
+
+<div class="setting-row">
+<span>Sound</span>
+<input type="checkbox" id="sound">
+</div>
+
+<div class="setting-row">
+<button onclick="testNotification()">🔔 Test Notification</button>
+</div>
+</div>
+
+<div class="setting-section">
+<h4>📆 Days</h4>
+<div class="setting-row"><span>Saturday</span><input type="checkbox" id="sat"></div>
+<div class="setting-row"><span>Sunday</span><input type="checkbox" id="sun"></div>
+</div>
+
+<div class="setting-section">
+<h4>🎨 Theme</h4>
+<select onchange="setTheme(this.value)">
+<option value="purple">Neon Purple</option>
+<option value="blue">Ocean Blue</option>
+<option value="green">Emerald</option>
+<option value="orange">Sunset</option>
+<option value="pink">Rose</option>
+<option value="cyan">Cyber</option>
+<option value="yellow">Solar</option>
+<option value="dark">Midnight</option>
+<option value="gray">Slate</option>
+<option value="red">Ruby</option>
+</select>
+</div>
+
+<div class="setting-section">
+<h4>🤖 AI Insight</h4>
+<small id="aiHint">Add classes to get AI tips</small>
+</div>
+
+<div class="setting-section">
+<h4>🔐 Security</h4>
+<button onclick="changePassword()">Change Password</button>
+<button class="danger" onclick="resetApp()">Reset App</button>
+</div>
+
+</div>
+</div>
+
+<script>
+/* INIT */
+const allDays=["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+if(!localStorage.getItem("pwd")){
+  localStorage.setItem("pwd",prompt("Create password"));
+}
+let classes=JSON.parse(localStorage.getItem("classes")||"[]");
+let afterAuth=null,editIndex=null;
+
+/* PASSWORD */
+function askPwd(cb){afterAuth=cb;pwdModal.style.display="flex";}
+function verifyPwd(){
+  if(pwdInput.value===localStorage.getItem("pwd")){
+    pwdModal.style.display="none";pwdInput.value="";afterAuth();
+  }else alert("Wrong password");
+}
+
+/* FORM */
+function openForm(i=null){
+  editIndex=i;formModal.style.display="flex";
+  cDay.innerHTML="";
+  days().forEach(d=>cDay.innerHTML+=`<option>${d}</option>`);
+  if(i!==null){
+    let c=classes[i];
+    cName.value=c.name;cDay.value=c.day;
+    cStart.value=c.start;cEnd.value=c.end;
+  }else cName.value=cStart.value=cEnd.value="";
+}
+function saveForm(){
+  const o={name:cName.value,day:cDay.value,start:cStart.value,end:cEnd.value};
+  editIndex===null?classes.push(o):classes[editIndex]=o;
+  localStorage.setItem("classes",JSON.stringify(classes));
+  formModal.style.display="none";render();
+}
+
+/* SETTINGS */
+function openSettings(){settingsPage.style.display="block";}
+function closeSettings(){settingsPage.style.display="none";}
+function changePassword(){
+  let n=prompt("New password");
+  if(n) localStorage.setItem("pwd",n);
+}
+function resetApp(){
+  if(confirm("Delete all data?")){
+    localStorage.clear();location.reload();
+  }
+}
+
+/* DAYS */
+function days(){
+  let d=allDays.slice(0,5);
+  if(sat.checked) d.push("Saturday");
+  if(sun.checked) d.push("Sunday");
+  localStorage.sat=sat.checked;
+  localStorage.sun=sun.checked;
+  return d;
+}
+
+/* THEME */
+function setTheme(t){
+  const m={
+    purple:["#8b5cf6","#22c55e"],blue:["#38bdf8","#0ea5e9"],
+    green:["#22c55e","#4ade80"],orange:["#fb923c","#facc15"],
+    pink:["#ec4899","#f472b6"],cyan:["#22d3ee","#06b6d4"],
+    yellow:["#facc15","#fde047"],dark:["#111827","#6b7280"],
+    gray:["#64748b","#94a3b8"],red:["#ef4444","#f87171"]
+  };
+  document.documentElement.style.setProperty("--primary",m[t][0]);
+  document.documentElement.style.setProperty("--accent",m[t][1]);
+  localStorage.theme=t;
+}
+if(localStorage.theme) setTheme(localStorage.theme);
+
+/* TEST NOTIFICATION */
+function testNotification(){
+  if(!notify.checked){
+    alert("Notifications disabled ❌");
+    return;
+  }
+  if(!("Notification" in window)){
+    alert("Notifications not supported");
+    return;
+  }
+  if(Notification.permission!=="granted"){
+    Notification.requestPermission().then(p=>{
+      if(p==="granted") fireTest();
+      else alert("Permission denied");
+    });
+  }else fireTest();
+}
+function fireTest(){
+  new Notification("📅 ClassTime AI",{
+    body:`Test reminder (${notifyTime.value} min before class)`
+  });
+  if(sound.checked){
+    try{
+      new Audio("data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEAIlYAAESsAAACABAAZGF0YQAAAAA=").play();
+    }catch(e){}
+  }
+}
+
+/* RENDER */
+function render(){
+  grid.innerHTML="";
+  classes.forEach((c,i)=>{
+    grid.innerHTML+=`
+    <div class="day">
+      <b>${c.day}</b>
+      <div class="class">
+        ${c.name}<br>
+        <small>${c.start} - ${c.end}</small><br>
+        <button onclick="askPwd(()=>openForm(${i}))">✏️</button>
+        <button class="danger" onclick="askPwd(()=>del(${i}))">🗑</button>
+      </div>
+    </div>`;
+  });
+  aiHint.textContent=classes.length
+    ?`AI Tip: ${classes.length} classes/week. Balance study & rest.`
+    :"Add classes to get AI tips";
+}
+function del(i){
+  classes.splice(i,1);
+  localStorage.setItem("classes",JSON.stringify(classes));
+  render();
+}
+
+/* LOAD */
+sat.checked=localStorage.sat==="true";
+sun.checked=localStorage.sun==="true";
+render();
+</script>
+
+</body>
+</html>
